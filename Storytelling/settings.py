@@ -37,6 +37,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
+    'Users',
+    'Stories',
+    'Realtime',
 ]
 
 MIDDLEWARE = [
@@ -67,7 +71,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'Storytelling.wsgi.application'
-
+ASGI_APPLICATION = 'Storytelling.asgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
