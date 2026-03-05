@@ -4,19 +4,19 @@
 
 {% block content %}
 
-<section class="home-container">
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inicio</title>
+</head>
+<body>
 
-    <h2>Bienvenido</h2>
+<h1>WebSocket Test</h1>
+<button onclick="sendMessage()">Enviar mensaje</button>
 
-    <p>
-        Plataforma interactiva accesible que permite navegar historias
-        mediante reconocimiento facial y comandos de voz.
-    </p>
 
-    <div class="actions">
-        <a href="#" class="btn-primary">Iniciar Historia</a>
-    </div>
-
-</section>
+</body>
+</html>
 
 {% endblock %}
