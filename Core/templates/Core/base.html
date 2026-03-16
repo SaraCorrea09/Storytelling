@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <title>{% block title %}Storytelling Inclusivo{% endblock %}</title>
 
-    <!-- CSS -->
     <link rel="stylesheet" href="{% static 'Core/css/styles.css' %}">
-
-    <!-- Fuente accesible -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_detection"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
 
     {% block extra_head %}{% endblock %}
 </head>
@@ -17,7 +17,13 @@
 
     <header class="main-header">
         <h1 class="logo">Storytelling Inclusivo</h1>
+
         <video id="camera" autoplay playsinline></video>
+        
+        <div id="camera-status">
+            <div id="camera-msg"></div>
+            <div id="face-msg"></div>
+        </div>
     </header>
 
     <main class="main-content">
@@ -29,7 +35,6 @@
         <p>Proyecto de interacción accesible con reconocimiento facial y voz</p>
     </footer>
 
-    <!-- JS global -->
     <script src="{% static 'Core/js/main.js' %}"></script>
 
     {% block extra_js %}{% endblock %}

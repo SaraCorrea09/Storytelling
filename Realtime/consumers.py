@@ -1,5 +1,6 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
+from Gestures.gesturesManager import gestures_manager
 
 class StoryConsumer(AsyncWebsocketConsumer):
 
@@ -9,13 +10,7 @@ class StoryConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        print("Mensaje recibido:", data)
-
-        # Respuesta al frontend
-        await self.send(text_data=json.dumps({
-            "message": "Servidor recibió tu mensaje",
-            "data": data
-        }))
+        gestures_manager(data)
 
     async def disconnect(self, close_code):
         print("WebSocket desconectado")

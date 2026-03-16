@@ -68,3 +68,29 @@ body {
     object-fit: cover;
     aspect-ratio: 4/3;
 }
+
+#camera-status{
+    position:absolute;
+    left:210px;
+    top:20px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+}
+
+.status-msg{
+    font-size:14px;
+    padding:6px 10px;
+    border-radius:6px;
+    font-weight:600;
+}
+
+.status-ok{
+    background:#00c3ff;
+    color:black;
+}
+
+.status-error{
+    background:#ff3b3b;
+    color:white;
+}

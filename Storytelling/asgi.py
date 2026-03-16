@@ -18,7 +18,6 @@ import Realtime.routing
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Storytelling.settings')
 
 django.setup()
-print("🔥 ASGI FILE LOADED")
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
