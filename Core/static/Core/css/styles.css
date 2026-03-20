@@ -1,10 +1,9 @@
-/* Hace que el body ocupe toda la pantalla */
+/* Cuerpo General de la Pagina */
 html, body {
     height: 100%;
     margin: 0;
 }
 
-/* Convertimos el body en contenedor flex */
 body {
     display: flex;
     flex-direction: column;
@@ -13,14 +12,12 @@ body {
     color: #fff;
 }
 
-/* El main crece y empuja el footer */
 .main-content {
     flex: 1;
     padding: 40px;
     text-align: center;
 }
 
-/* Header y footer no crecen */
 .main-header {
     background-color: #000;
     padding: 30px;
@@ -35,21 +32,6 @@ body {
     text-align: center;
     font-size: 14px;
     background-color: #000;
-}
-
-.btn-primary {
-    display: inline-block;
-    padding: 12px 24px;
-    background-color: #00c3ff;
-    color: #000;
-    text-decoration: none;
-    font-weight: 600;
-    border-radius: 6px;
-    margin-top: 20px;
-}
-
-.btn-primary:hover {
-    opacity: 0.8;
 }
 
 #camera{
@@ -93,4 +75,201 @@ body {
 .status-error{
     background:#ff3b3b;
     color:white;
+}
+
+
+
+/* Ocultar y Mostrar Vistas */
+.view {
+    display: none;
+}
+
+.view.active {
+    display: block;
+}
+
+
+
+/* Animación de los Menus */
+.menu-item {
+    opacity: 0.5;
+    padding: 12px;
+    transition: 0.2s;
+}
+
+.menu-item.active {
+    opacity: 1;
+    background: #00c3ff;
+    transform: scale(1.05);
+}
+
+
+
+/* Historias */
+/* Cuerpo General de las Historias */
+.main-content:has(.story-wrapper) {
+    position: relative;
+}
+
+.story-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.story-top {
+    flex: 0 0 20%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.story-middle {
+    flex: 0 0 60%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+}
+
+.story-bottom {
+    flex: 0 0 20%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 20px;
+}
+
+.scene-title-content {
+    width: 100%;
+    padding: 12px 0;
+    background: #00c3ff;
+    color: black;
+}
+
+#scene-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+#scene-content {
+    flex: 1;
+    max-width: 600px;
+    text-align: center;
+}
+
+/* Opciones de Gestos */
+
+/* Base de la opción: El texto */
+.gesture-option {
+    position: relative;
+    padding: 10px 20px;
+    cursor: pointer;
+    
+    /* Efecto del Texto Base */
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    
+    /* Suavizado de todas las transiciones */
+    transition: color 0.3s ease, transform 0.3s ease;
+    
+    /* Asegura que el texto esté POR ENCIMA del óvalo */
+    z-index: 1; 
+}
+
+/* --- EL ÓVALO --- */
+.gesture-option::before {
+    content: '';
+    position: absolute;
+    
+    /* Lo hacemos un círculo ENORME que sobresalga */
+    width: 200%; 
+    height: 200%;
+    top: -50%;
+    left: -50%;
+    border-radius: 50%; /* Un círculo perfecto */
+
+    /* Degradado Radial: Centro traslúcido -> Borde invisible */
+    background: radial-gradient(circle, rgba(0, 195, 255, 0.15) 0%, rgba(0, 195, 255, 0) 70%);
+    
+    /* Estado Inicial: Oculto y Pequeño */
+    opacity: 0;
+    transform: scale(0);
+    
+    /* Transición suave para el efecto de pulso */
+    transition: transform 0.6s ease-out, opacity 0.6s ease-out;
+    
+    /* Lo ponemos detrás del texto */
+    z-index: -1; 
+}
+
+/* --- AJUSTES DE DIRECCIÓN --- 
+   Modificamos el degradado para que el "pulso" parezca nacer desde el borde */
+
+#option-up::before {
+    background: radial-gradient(ellipse at bottom, rgba(0, 195, 255, 0.2) 0%, rgba(0, 195, 255, 0) 80%);
+}
+
+#option-down::before {
+    background: radial-gradient(ellipse at top, rgba(255, 0, 0, 0.801) 0%, rgba(0, 195, 255, 0) 80%);
+}
+
+#option-left::before {
+    background: radial-gradient(ellipse at right, rgba(0, 195, 255, 0.2) 0%, rgba(0, 195, 255, 0) 80%);
+}
+
+#option-right::before {
+    background: radial-gradient(ellipse at left, rgba(0, 195, 255, 0.2) 0%, rgba(0, 195, 255, 0) 80%);
+}
+
+
+/* --- ESTADO: ACTIVO (SELECCIONADO) --- */
+
+.gesture-option.active {
+    /* 1. Intensificar el color del texto */
+    color: #00c3ff; /* Celeste brillante */
+    transform: scale(1.05); /* Un pequeño realce */
+}
+
+/* 2. Activar la animación del óvalo */
+.gesture-option.active::before {
+    opacity: 1;    /* Se vuelve visible */
+    transform: scale(1); /* Se agranda creando el pulso */
+    
+    /* Opcional: Un pulso infinito mientras esté activo */
+    animation: pulsoInfinito 2s infinite ease-out;
+}
+
+/* Definición de la animación de pulso infinito */
+@keyframes pulsoInfinito {
+    0% { transform: scale(0.8); opacity: 0.8; }
+    100% { transform: scale(1.2); opacity: 0; }
+}
+
+
+/* --- ESTADO: CONFIRM (ACCIÓN) --- 
+   Un destello rápido de otro color */
+
+.gesture-option.confirm {
+    color: #00ff88; /* Verde brillante */
+    transform: scale(1.2);
+    transition: all 0.1s ease; /* Más rápido */
+}
+
+.gesture-option.confirm::before {
+    background: radial-gradient(circle, rgba(0, 255, 136, 0.3) 0%, rgba(0, 255, 136, 0) 70%);
+    animation: pulseConfirm 0.4s ease-out;
+}
+
+@keyframes pulseConfirm {
+    0% { transform: scale(0.5); opacity: 1; }
+    100% { transform: scale(1.5); opacity: 0; }
 }

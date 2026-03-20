@@ -94,3 +94,81 @@ body {
     background:#ff3b3b;
     color:white;
 }
+
+/* Vistas */
+.view {
+    display: none;
+}
+
+.view.active {
+    display: block;
+}
+
+/* Animación de menus */
+.menu-item {
+    opacity: 0.5;
+    padding: 12px;
+    transition: 0.2s;
+}
+
+.menu-item.active {
+    opacity: 1;
+    background: #00c3ff;
+    transform: scale(1.05);
+}
+
+
+/* ESTILOS PARA LA INTERFAZ DE GESTOS */
+/* CONTENEDOR GENERAL */
+#gesture-ui{
+    display:grid;
+    grid-template-rows:100px 1fr 100px;
+    height:100vh;
+}
+
+/* FILA CENTRAL */
+.middle-row{
+    display:grid;
+    grid-template-columns:200px 1fr 200px;
+}
+
+/* OPCIONES */
+.gesture-option{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:20px;
+    opacity:0.4;
+    transition: all 0.25s ease;
+    position: relative;
+}
+
+/* EFECTO BASE */
+.gesture-option::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:#00c3ff;
+    opacity:0;
+    transition: opacity 0.25s ease;
+}
+
+/* CUANDO ESTA SELECCIONADO */
+.gesture-option.active{
+    opacity:1;
+    transform: scale(1.05);
+}
+
+.gesture-option.active::after{
+    opacity:0.25;
+}
+
+/* EFECTO DE CONFIRMACION (parpadeo) */
+.gesture-option.confirm{
+    animation: confirmFlash 0.4s ease;
+}
+
+@keyframes confirmFlash{
+    0% { background:#00c3ff; }
+    100% { background:transparent; }
+}

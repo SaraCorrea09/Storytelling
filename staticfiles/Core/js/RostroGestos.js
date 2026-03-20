@@ -1,15 +1,3 @@
-// Coneccion WebSocket
-const socket = new WebSocket("ws://" + window.location.host + "/ws/story/");
-
-socket.onopen = function() {
-    console.log("Conectado al servidor");};
-
-socket.onmessage = function(e) {
-    const data = JSON.parse(e.data);
-    console.log("Mensaje del servidor:", data);};
-
-
-
 // Activacion Camara
 async function startCamera() {
 
@@ -22,21 +10,17 @@ async function startCamera() {
         video.srcObject = stream;
 
         console.log("Cámara activada");
-
         showStatus("camera-msg","Cámara activada","ok",2000);
-
         startFaceDetection(video);
 
     } catch (error) {
         console.error("No se pudo acceder a la cámara:", error);
-
         showStatus("camera-msg","No se pudo activar la cámara","error");}}
-
 
 // ESTADOS DEL SISTEMA
 let faceState = false
 let blinkStart = null
-let gestureCooldown = false
+let headDown = false
 
 // Deteccion de rostro con MediaPipe
 function startFaceDetection(video){
@@ -50,12 +34,14 @@ function startFaceDetection(video){
         model: 'short',
         minDetectionConfidence: 0.6});
 
+    // INICIAR DETECCION DE GESTOS
+    const faceMesh = startGestureDetection(video);
+
     faceDetection.onResults(results => {
 
         if(results.detections.length > 0){
 
         if(!faceState){
-
             faceState = true;
             console.log("Rostro detectado");
             showStatus("face-msg","Rostro detectado","ok",2000);
@@ -63,9 +49,7 @@ function startFaceDetection(video){
                 type: "face_detected",
                 value: true }));}}
         else{
-
             if(faceState){
-
                 faceState = false;
                 console.log("No se detecta rostro");
                 showStatus("face-msg","No se detecta rostro","error");
@@ -75,7 +59,8 @@ function startFaceDetection(video){
 
     const camera = new Camera(video, {
         onFrame: async () => {
-            await faceDetection.send({image: video});},
+            await faceDetection.send({image: video});
+            await faceMesh.send({image: video});},
         width: 640,
         height: 480});
 
@@ -90,30 +75,26 @@ function startGestureDetection(video){
     const faceMesh = new FaceMesh({
         locateFile: (file)=>{
             return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
-        }
-    })
+        }})
 
     faceMesh.setOptions({
         maxNumFaces:1,
         refineLandmarks:true,
         minDetectionConfidence:0.6,
-        minTrackingConfidence:0.6
-    })
+        minTrackingConfidence:0.6})
 
 
     faceMesh.onResults(results=>{
 
         // SOLO analizar gestos si hay rostro
         if(!faceState) return
-
         if(results.multiFaceLandmarks.length === 0) return
 
         const landmarks = results.multiFaceLandmarks[0]
 
         detectHeadTilt(landmarks)
-        detectBlink(landmarks)
-
-    })
+        detectHeadVertical(landmarks)
+        detectBlink(landmarks)})
 
     return faceMesh
 }
@@ -133,19 +114,38 @@ function detectHeadTilt(landmarks){
     const angle = Math.atan2(dy, dx) * 180 / Math.PI
 
     if(angle > 15){
-
-        console.log("Cabeza derecha")
-
-        sendGesture("head_right")
-
+        console.log("Cabeza izquierda")
+        handleGesture("head_left")
     }
 
     if(angle < -15){
+        console.log("Cabeza derecha")
+        handleGesture("head_right")
+    }}
 
-        console.log("Cabeza izquierda")
+function detectHeadVertical(landmarks){
 
-        sendGesture("head_left")
+    if(gestureCooldown) return
 
+    const nose = landmarks[1]
+    const leftEye = landmarks[33]
+    const rightEye = landmarks[263]
+
+    const eyeCenterY = (leftEye.y + rightEye.y) / 2
+    const diff = nose.y - eyeCenterY
+
+    headDown = diff > 0.10
+
+    if(headDown){
+
+        console.log("Cabeza abajo")
+        handleGesture("head_down")
+    }
+
+    if(diff < 0.04){
+
+        console.log("Cabeza arriba")
+        handleGesture("head_up")
     }
 
 }
@@ -153,60 +153,33 @@ function detectHeadTilt(landmarks){
 // DETECCION PARPADEO LARGO
 function detectBlink(landmarks){
 
+    if(headDown) return
     if(gestureCooldown) return
 
     const top = landmarks[159]
     const bottom = landmarks[145]
-
     const left = landmarks[33]
     const right = landmarks[133]
-
     const vertical = Math.abs(top.y - bottom.y)
     const horizontal = Math.abs(left.x - right.x)
-
     const ratio = vertical / horizontal
-
     const threshold = 0.18
 
     if(ratio < threshold){
 
         if(!blinkStart){
-            blinkStart = Date.now()
-        }
+            blinkStart = Date.now()}
 
         const duration = Date.now() - blinkStart
 
-        if(duration > 700){
-
+        if(duration > 200){
             console.log("Parpadeo largo")
-
-            sendGesture("long_blink")
-
-            blinkStart = null
-        }
+            handleGesture("long_blink")
+            blinkStart = null}
 
     }else{
-
         blinkStart = null
-
     }
-
-}
-
-// ENVIO DE GESTOS + COOLDOWN
-function sendGesture(type){
-
-    gestureCooldown = true
-
-    socket.send(JSON.stringify({
-        type:"gesture",
-        value:type
-    }))
-
-    setTimeout(()=>{
-        gestureCooldown = false
-    },1000)
-
 }
 
 // Status de la camara y deteccion de rostro

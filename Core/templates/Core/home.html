@@ -5,18 +5,91 @@
 {% block content %}
 
 {% load static %}
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Inicio</title>
-</head>
 <body>
+<!-- Menu Inicio -->
+<div id="view-home" class="view active">  
+    <h1>Bienvenido</h1> 
+    <div id="menu-container">
 
-<h1>Bienvenido</h1>
-<button onclick="sendMessage()">Iniciar Sesión</button>
+        <div class="menu-item active" data-action="login">
+            Iniciar sesión
+        </div>
+
+        <div class="menu-item" data-action="menustory">
+            Historias
+        </div>
+
+    </div>
+</div>
+
+<!-- Menu Histrias -->
+<div id="view-menustory" class="view">
+    <h1>Historias</h1> 
+    <div id="menu-container">
+
+        <div class="menu-item active" data-action="new_story">
+            Historia Nueva
+        </div>
+
+        <div class="menu-item" data-action="record_story">
+            Registro de historias
+        </div>
+
+        <div class="menu-item" data-action="home">
+            Volver al inicio
+        </div>
+
+    </div>
+</div>
+
+<!-- Menu Iniciar Sesión -->
+<div id="view-login" class="view">
+    <h1>Iniciar sesión</h1> 
+    <div id="menu-container">
+
+        <div class="menu-item active" data-action="login">
+            Pendiente
+        </div>
+
+        <div class="menu-item" data-action="home">
+            Volver
+        </div>
+
+    </div>
+</div>
+
+<!-- Interfaz de las historias -->
+<div id="view-story" class="view">
+    <div class="story-wrapper">
+
+        <div class="story-top">
+            <div class ="scene-title-content">
+            <h2 id="scene-title">Titulo Historia</h2>
+            </div>
+            <div id="option-up" class="gesture-option" data-action="pause">Pausar</div>
+        </div>
+
+        <div class="story-middle">
+            <div id="option-left" class="gesture-option" data-action="left">Opción izq</div>
+
+            <div id="scene-content">
+                <p id="scene-text">Contenido</p>
+            </div>
+
+            <div id="option-right" class="gesture-option" data-action="right">Opción der</div>
+        </div>
+
+        <div class="story-bottom">
+            <div id="option-down" class="gesture-option" data-action="return">Volver</div>
+        </div>
+
+    </div>
+</div>
 
 
 </body>
-</html>
+{% endblock %}
 
+{% block extra_js %}    
+    <script src="{% static 'Core/js/menu.js' %}"></script>
 {% endblock %}

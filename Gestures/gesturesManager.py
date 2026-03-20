@@ -1,19 +1,9 @@
 
 def gestures_manager(data):
-    gesto = data["type"]
-    valor = data["value"]
+    type = data.get("type", None)
+    action = data.get("action", None)
+    payload = data.get("payload", None)
 
-    if gesto == "face_detected":
-        if valor:
-            print("Se detectó un rostro en el frontend")
-            # Aqui mandar al inicio de sesion 
-        else:
-            print("No se detecta rostro en el frontend")
+    print(f"Received message: {type} - {action} - {payload}")
 
-    elif gesto == "gesture":
-        if valor == "head_right":
-            print("Gesto de cabeza hacia la derecha detectado en el frontend")
-        elif valor == "head_left":
-            print("Gesto de cabeza hacia la izquierda detectado en el frontend")    
-        elif valor == "long_blink":
-            print("Parpadeo largo detectado en el frontend")
+
