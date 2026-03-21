@@ -1,8 +1,12 @@
+let socketReady = false;
+
 // Coneccion WebSocket
 const socket = new WebSocket("ws://" + window.location.host + "/ws/story/");
 
 socket.onopen = function() {
-    console.log("Conectado al servidor");};
+    console.log("Conectado al servidor");
+    socketReady = true;
+};
 
 socket.onmessage = function(e) {
     const data = JSON.parse(e.data);
@@ -14,9 +18,17 @@ socket.onmessage = function(e) {
 };
 
 function sendMessage(type, action, message = null){
+
+    if (!socketReady || socket.readyState !== WebSocket.OPEN) {
+        console.warn("WebSocket no listo aún");
+        return;
+    }
+
     socket.send(JSON.stringify({
                         type: type,
                         action: action,
                         payload: message
                     }))
+    
+    console.log("Mensaje enviado al servidor:", {type, action, payload: message});
 }
