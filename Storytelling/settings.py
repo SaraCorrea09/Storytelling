@@ -26,7 +26,7 @@ SECRET_KEY = 'django-insecure-aw!9lh!dzxop%36-v)+ejra3g33@8sy(6af%06)33aljs(3_5g
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -79,12 +79,11 @@ TEMPLATES = [
 WSGI_APPLICATION = 'Storytelling.wsgi.application'
 ASGI_APPLICATION = 'Storytelling.asgi.application'
 
-
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [os.environ.get("redis://red-d6uu5efkijhs73cgqcsg:6379")],
+            "hosts": ["redis://red-d6uu5efkijhs73cgqcsg:6379"],
         },
     },
 }
@@ -136,7 +135,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+# STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
