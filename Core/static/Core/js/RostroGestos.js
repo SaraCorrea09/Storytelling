@@ -27,6 +27,7 @@ async function startCamera() {
         console.error("No se pudo acceder a la cámara:", error);
         showStatus("camera-msg","No se pudo activar la cámara","error");}}
 
+
 // RECONOCIMIENTO DE VOZ
 function startSpeechRecognition() {
 
@@ -46,7 +47,7 @@ function startSpeechRecognition() {
 
     recognition.onstart = () => {
         console.log("Micrófono activo");
-        showStatus("camera-msg","Micrófono activo","ok");
+        showStatus("camera-msg","Micrófono activo","ok",2000);
     };
 
     recognition.onresult = (event) => {
@@ -57,7 +58,6 @@ function startSpeechRecognition() {
             transcript += event.results[i][0].transcript;
         }
 
-        console.log("Usuario dijo:", transcript);
         handleVoice(transcript);
     };
 
@@ -100,7 +100,7 @@ function startFaceDetection(video){
         if(!faceState){
             faceState = true;
             console.log("Rostro detectado");
-            showStatus("face-msg","Rostro detectado","ok",2000);
+            showStatus("face-msg","Rostro detectado","ok");
             sendMessage("face_detected", "update", true)
             }}
         else{
@@ -158,7 +158,23 @@ function startGestureDetection(video){
 }
 
 
-// DETECCION INCLINACION CABEZA
+// ===============================
+// HEAD TILT (con estado)
+// ===============================
+
+let angleHistory = []
+const ANGLE_WINDOW = 5
+
+let tiltState = "neutral" // "left", "right", "neutral"
+
+function smoothAngle(angle){
+    angleHistory.push(angle)
+    if(angleHistory.length > ANGLE_WINDOW){
+        angleHistory.shift()
+    }
+    return angleHistory.reduce((a,b)=>a+b,0)/angleHistory.length
+}
+
 function detectHeadTilt(landmarks){
 
     if(gestureCooldown) return
@@ -169,17 +185,40 @@ function detectHeadTilt(landmarks){
     const dx = rightEye.x - leftEye.x
     const dy = rightEye.y - leftEye.y
 
-    const angle = Math.atan2(dy, dx) * 180 / Math.PI
+    const angleRaw = Math.atan2(dy, dx) * 180 / Math.PI
+    const angle = smoothAngle(angleRaw)
 
-    if(angle > parameterGestureLeft){
-        console.log("Cabeza izquierda")
-        handleGesture("head_left")
+    const deadZone = 5
+
+    if(angle > parameterGestureLeft + deadZone){
+        if(tiltState !== "left"){
+            tiltState = "left"
+            console.log("Cabeza izquierda")
+            handleGesture("head_left")
+        }
+        return
     }
 
-    if(angle < parameterGestureRight){
-        console.log("Cabeza derecha")
-        handleGesture("head_right")
-    }}
+    if(angle < parameterGestureRight - deadZone){
+        if(tiltState !== "right"){
+            tiltState = "right"
+            console.log("Cabeza derecha")
+            handleGesture("head_right")
+        }
+        return
+    }
+
+    // Zona neutral
+    tiltState = "neutral"
+}
+
+// ===============================
+// HEAD VERTICAL (con estado real)
+// ===============================
+let verticalState = "neutral"
+
+// baseline de referencia (posición normal del usuario)
+let baselineVertical = null
 
 function detectHeadVertical(landmarks){
 
@@ -190,57 +229,174 @@ function detectHeadVertical(landmarks){
     const rightEye = landmarks[263]
 
     const eyeCenterY = (leftEye.y + rightEye.y) / 2
-    const diff = nose.y - eyeCenterY
+    const faceHeight = Math.abs(landmarks[10].y - landmarks[152].y)
 
-    headDown = diff > parameterGestureDown
+    const diffRaw = (nose.y - eyeCenterY) / faceHeight
 
-    if(headDown){
-
-        console.log("Cabeza abajo")
-        handleGesture("head_down")
+    // CALIBRACIÓN AUTOMÁTICA (solo al inicio o si aún no hay baseline)
+    if(baselineVertical === null){
+        baselineVertical = diffRaw
+        return
     }
 
-    if(diff < parameterGestureUp){
+    // Suavizar baseline lentamente (adaptación)
+    baselineVertical = 0.98 * baselineVertical + 0.02 * diffRaw
 
-        console.log("Cabeza arriba")
-        handleGesture("head_up")
+    // Diferencia real respecto a posición neutral
+    const diff = diffRaw - baselineVertical
+
+    const deadZone = 0.015
+
+    // ABAJO
+    if(diff > parameterGestureDown){
+        if(verticalState !== "down"){
+            verticalState = "down"
+            headDown = true
+            console.log("Cabeza abajo")
+            handleGesture("head_down")
+        }
+        return
     }
 
+    // ARRIBA
+    if(diff < -parameterGestureUp){
+        if(verticalState !== "up"){
+            verticalState = "up"
+            headDown = false
+            console.log("Cabeza arriba")
+            handleGesture("head_up")
+        }
+        return
+    }
+
+    // NEUTRAL
+    if(Math.abs(diff) < deadZone){
+        verticalState = "neutral"
+        headDown = false
+    }
 }
 
+// ===============================
 // DETECCION PARPADEO LARGO
+// ===============================
+
+let earHistory = []
+const EAR_WINDOW = 5
+
+let baselineEAR = null
+let eyeState = "open" // "open" | "closing"
+let openFrames = 0
+
+function distance(a, b) {
+    return Math.hypot(a.x - b.x, a.y - b.y)
+}
+
+function getEAR(landmarks) {
+    const p1 = landmarks[33]
+    const p4 = landmarks[133]
+
+    const p2 = landmarks[159]
+    const p6 = landmarks[145]
+
+    const p3 = landmarks[158]
+    const p5 = landmarks[153]
+
+    const vertical1 = distance(p2, p6)
+    const vertical2 = distance(p3, p5)
+    const horizontal = distance(p1, p4)
+
+    return (vertical1 + vertical2) / (2.0 * horizontal)
+}
+
+function smoothEAR(ear) {
+    earHistory.push(ear)
+    if (earHistory.length > EAR_WINDOW) {
+        earHistory.shift()
+    }
+    return earHistory.reduce((a, b) => a + b, 0) / earHistory.length
+}
+
+function updateBaseline(ear) {
+    if (!baselineEAR) {
+        baselineEAR = ear
+        return
+    }
+
+    // Solo actualizar si claramente está abierto
+    if (ear > baselineEAR * 0.9) {
+        baselineEAR = 0.98 * baselineEAR + 0.02 * ear
+    }
+}
+
+function isHeadTurned(landmarks) {
+    const nose = landmarks[1]
+    const leftFace = landmarks[234]
+    const rightFace = landmarks[454]
+
+    const distLeft = Math.abs(nose.x - leftFace.x)
+    const distRight = Math.abs(nose.x - rightFace.x)
+
+    const ratio = distLeft / distRight
+
+    return (ratio < 0.5 || ratio > 2)
+}
+
 function detectBlink(landmarks){
 
-    if(headDown) return
     if(gestureCooldown) return
+    if(isHeadTurned(landmarks)) return
 
-    const top = landmarks[159]
-    const bottom = landmarks[145]
-    const left = landmarks[33]
-    const right = landmarks[133]
-    const vertical = Math.abs(top.y - bottom.y)
-    const horizontal = Math.abs(left.x - right.x)
-    const ratio = vertical / horizontal
-    const threshold = 0.18
+    const earRaw = getEAR(landmarks)
+    const ear = smoothEAR(earRaw)
 
-    if(ratio < threshold){
+    updateBaseline(ear)
 
-        if(!blinkStart){
-            blinkStart = Date.now()}
+    if(!baselineEAR) return
 
-        const duration = Date.now() - blinkStart
+    const threshold = baselineEAR * 0.65
 
-        if(duration > parameterGestureBlink){
-            console.log("Parpadeo largo")
-            handleGesture("long_blink")
-            blinkStart = null}
+    // OJO ABIERTO
+    if(ear > threshold){
+        openFrames++
 
-    }else{
-        blinkStart = null
+        if(eyeState !== "open"){
+            eyeState = "open"
+            blinkStart = null
+        }
+
+        return
+    }
+
+    // Evitar falsos si no estuvo abierto antes
+    if(openFrames < 2){
+        return
+    }
+
+    // OJO CERRANDO
+    if(ear <= threshold){
+
+        if(eyeState === "open"){
+            eyeState = "closing"
+            blinkStart = Date.now()
+        }
+
+        if(blinkStart){
+            const duration = Date.now() - blinkStart
+
+            if(duration > parameterGestureBlink){
+                console.log("Parpadeo largo")
+                handleGesture("long_blink")
+
+                blinkStart = null
+                eyeState = "open"
+                openFrames = 0
+            }
+        }
     }
 }
 
-// Status de la camara y deteccion de rostro
+
+// STATUS DE LA CAMARA Y ROSTRO
 function showStatus(elementId, message, type, duration=0){
 
     const el = document.getElementById(elementId);
