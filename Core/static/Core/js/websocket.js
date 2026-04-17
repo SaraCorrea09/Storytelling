@@ -1,7 +1,8 @@
 let socketReady = false;
 
 // Coneccion WebSocket
-const socket = new WebSocket("ws://" + window.location.host + "/ws/story/");
+const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
+const socket = new WebSocket(protocol + window.location.host + "/ws/story/");
 
 socket.onopen = function() {
     console.log("Conectado al servidor");
@@ -30,3 +31,11 @@ function sendMessage(type, action, message = null){
     
     console.log("Mensaje enviado al servidor:", {type, action, payload: message});
 }
+
+socket.onerror = function(e) {
+    console.error("Error en WebSocket:", e);
+};
+
+socket.onclose = function(e) {
+    console.warn("WebSocket cerrado:", e);
+};
