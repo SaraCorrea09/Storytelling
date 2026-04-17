@@ -52,11 +52,11 @@ function startSpeechRecognition() {
 
     recognition.onresult = (event) => {
 
-        let transcript = "";
+        const result = event.results[event.results.length - 1];
 
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-            transcript += event.results[i][0].transcript;
-        }
+        if (!result.isFinal) return;
+
+        const transcript = result[0].transcript.trim();
 
         handleVoice(transcript);
     };

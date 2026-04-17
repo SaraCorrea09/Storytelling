@@ -11,12 +11,12 @@
     <h1>Bienvenido</h1> 
     <div id="menu-container">
 
-        <div class="menu-item active" data-action="login">
-            Iniciar sesión
+        <div class="menu-item active" data-action="menustory">
+            Historias
         </div>
 
-        <div class="menu-item" data-action="menustory">
-            Historias
+        <div class="menu-item" data-action="ManageGestures">
+            Sensibilidad de Gestos
         </div>
 
     </div>
@@ -28,26 +28,26 @@
     <div id="menu-container">
 
         <div class="menu-item active" data-action="new_story">
-            Historia Nueva
+            Historia Aleatoria
         </div>
 
         <div class="menu-item" data-action="record_story">
-            Registro de historias
+            Lista de Historias
         </div>
 
         <div class="menu-item" data-action="home">
-            Volver al inicio
+            Volver
         </div>
 
     </div>
 </div>
 
-<!-- Menu Iniciar Sesión -->
-<div id="view-login" class="view">
-    <h1>Iniciar sesión</h1> 
+<!-- Menu Sensibilidad de Gestos -->
+<div id="view-ManageGestures" class="view">
+    <h1>Sensibilidad de Gestos</h1> 
     <div id="menu-container">
 
-        <div class="menu-item active" data-action="login">
+        <div class="menu-item active" data-action="ManageGestures">
             Pendiente
         </div>
 
@@ -90,6 +90,5 @@
 </body>
 {% endblock %}
 
-{% block extra_js %}    
-    <script src="{% static 'Core/js/menu.js' %}"></script>
+{% block extra_js %}
 {% endblock %}

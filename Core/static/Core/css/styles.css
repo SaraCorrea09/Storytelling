@@ -183,6 +183,18 @@ body {
     
     /* Asegura que el texto esté POR ENCIMA del óvalo */
     z-index: 1; 
+
+    max-width: 180px;
+    text-align: center;
+
+    display: -webkit-box;
+    -webkit-line-clamp: 3;      /* máximo 3 líneas */
+    -webkit-box-orient: vertical;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    line-height: 1.2;
 }
 
 /* --- EL ÓVALO --- */

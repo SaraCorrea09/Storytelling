@@ -1,21 +1,54 @@
 let gestureCooldown = false
 let selectedOption = null
 
+function managerAnswer(data){
+    if(data.type === "story" && data.action === "view"){
+        goToView("story")
+        loadStory(data.payload)
+    }
+    if(data.type === "story" && data.action === "list"){}
+}
+
 function handleVoice(text) {
 
     text = text.toLowerCase();
+    const stateOptions = {
+        "home": {"menustory": "Historias", "ManageGestures": "Sensibilidad de Gestos"},
+        "menustory": {"new_story": "Historia Aleatoria", "record_story": "Lista de Historias", "home": "Volver"},
+        "ManageGestures": {"home": "Volver"},
+        "story": {"left": "Opción Izquierda", "right": "Opción Derecha", "pause": "Pausar", "reset": "Reiniciar", "return": "Volver", "resume": "reanudar"}
+    }
+    const currentView = appState.currentView
+    const options = stateOptions[currentView]
 
-    if (text.includes("siguiente")) {
-        console.log("Comando: siguiente");
+    if (!options) return;
+
+    for (const action in options) {
+        const phrase = options[action].toLowerCase();
+
+        if (text.includes(phrase)) {
+            console.log("Acción detectada:", action);
+            let selectedOption = null;
+
+            if (currentView === "story") {
+                if (action === "reset" || action === "return") {
+                selectedOption = "down" }
+
+                else if (action === "pause" || action === "resume") {
+                selectedOption = "up" }
+
+                else {
+                selectedOption = action}
+
+                confirmSelection(action,selectedOption);
+
+            } else {
+                confirmSelection(action);}
+
+            return;
+        }
     }
 
-    if (text.includes("anterior")) {
-        console.log("Comando: anterior");
-    }
-
-    if (text.includes("seleccionar")) {
-        console.log("Comando: seleccionar");
-    }
 }
 
 function handleGesture(gesture){
@@ -72,73 +105,58 @@ function selectOption(direction){
 
 
 
-function confirmSelection(){
+function confirmSelection(action = null, optionFromVoice = null){
     const kind_view = getKindView(appState.currentView)
 
     // Navegación tipo menú
     if(kind_view === "menu"){
-        const activeView = document.querySelector(".view.active")
-        const items = activeView.querySelectorAll(".menu-item")
-        const selected = items[menuIndex]
-        const action = selected.dataset.action
+
+        if (!action){
+            const activeView = document.querySelector(".view.active")
+            const items = activeView.querySelectorAll(".menu-item")
+            const selected = items[menuIndex]
+            action = selected.dataset.action}
 
         console.log("Seleccionaste:", action)
 
         switch(appState.currentView){
             case "home":
-                if(action === "menustory"){
-                    goToView("menustory")
-                }
-
-                if(action === "login"){
-                    goToView("login")
-                }
-            break
-            
+                if(action === "menustory") goToView("menustory");
+                if(action === "ManageGestures") goToView("ManageGestures");
+                break;
             case "menustory":
-                if(action === "home"){
-                    goToView("home")
-                }
-                if(action === "new_story"){
-                    sendMessage("story","new")
-                    goToView("story")
-                }
-                if(action === "record_story"){
-                 
-                }
-            break
+                if(action === "home") goToView("home");
+                if(action === "new_story") sendMessage("story","random");
+                if(action === "record_story") sendMessage("story","list");
+                break;
+            case "ManageGestures":
+                if(action === "ManageGestures"){}
+                if(action === "home") goToView("home");
+                break;}
 
-            case "login":
-                if(action === "login"){
-                 
-                }
-                if(action === "home"){
-                    goToView("home")
-                }
-            break
-        }
+        return;
 
-        return
-    
     // Navegación tipo historias
     } else if (kind_view === "story"){
 
-        if(!selectedOption) return
+        const finalOption = optionFromVoice || selectedOption;
+        if (!finalOption) return;
 
-        const el = document.getElementById("option-" + selectedOption)
-        const accion = el.dataset.action
+        const el = document.getElementById("option-" + finalOption);
+        if (!action){
+            action = el.dataset.action}
 
-        console.log("Seleccionaste:", accion)
+        console.log("Seleccionaste:", action)
 
         // animación visual
         el.classList.add("confirm")
         setTimeout(()=>{el.classList.remove("confirm")},800)
 
-        if (accion === "left"){}
-        if (accion === "right"){}
-        if (accion === "pause"){}      
-        if (accion === "return"){
-            goToView("menustory")
-        }
+        if (action === "left") chooseLeft();
+        if (action === "right") chooseRight();
+        if (action === "pause") pauseStory();
+        if (action === "resume") resumeStory();
+        if (action === "reset") resetStory();    
+        if (action === "return") goToView("menustory");
     }
 }

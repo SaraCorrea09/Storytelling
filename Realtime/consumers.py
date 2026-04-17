@@ -10,7 +10,15 @@ class StoryConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        gestures_manager(data)
+        await gestures_manager(data, self)
+
+    async def send_data(self, type, action, payload=None):
+        data = {
+            "type": type,
+            "action": action,
+            "payload": payload
+        }
+        await self.send(text_data=json.dumps(data))
 
     async def disconnect(self, close_code):
         print("WebSocket desconectado")

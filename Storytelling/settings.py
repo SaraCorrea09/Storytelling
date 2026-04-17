@@ -31,8 +31,6 @@ ALLOWED_HOSTS = ['*']
 
 # Application definition
 
-AUTH_USER_MODEL = 'Users.User'
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -41,7 +39,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'channels',
-    'Users',
     'Stories',
     'Realtime',
     'Core',
@@ -81,10 +78,11 @@ ASGI_APPLICATION = 'Storytelling.asgi.application'
 
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": ["redis://red-d6uu5efkijhs73cgqcsg:6379"],
-        },
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+        #"BACKEND": "channels_redis.core.RedisChannelLayer",
+        #"CONFIG": {
+         #   "hosts": ["redis://red-d6uu5efkijhs73cgqcsg:6379"],
+        #},
     },
 }
 

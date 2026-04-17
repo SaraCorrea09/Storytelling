@@ -6,15 +6,13 @@ const socket = new WebSocket("ws://" + window.location.host + "/ws/story/");
 socket.onopen = function() {
     console.log("Conectado al servidor");
     socketReady = true;
+    sendMessage("story", "create");
 };
 
 socket.onmessage = function(e) {
     const data = JSON.parse(e.data);
     console.log("Mensaje del servidor:", data);
-
-    if(data.type === "scene"){
-        renderScene(data)
-    }
+    managerAnswer(data)
 };
 
 function sendMessage(type, action, message = null){
