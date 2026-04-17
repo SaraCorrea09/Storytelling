@@ -12,12 +12,18 @@ function managerAnswer(data){
 function handleVoice(text) {
 
     text = text.toLowerCase();
+    
+    //const stateOptions = {
+    //    "home": {"menustory": "Historias", "ManageGestures": "Sensibilidad de Gestos"},
+    //    "menustory": {"new_story": "Historia Aleatoria", "record_story": "Lista de Historias", "home": "Volver"},
+    //    "ManageGestures": {"home": "Volver"},
+    //    "story": {"left": "Opción Izquierda", "right": "Opción Derecha", "pause": "Pausar", "reset": "Reiniciar", "return": "Volver", "resume": "reanudar"}
+    //}
+
     const stateOptions = {
-        "home": {"menustory": "Historias", "ManageGestures": "Sensibilidad de Gestos"},
-        "menustory": {"new_story": "Historia Aleatoria", "record_story": "Lista de Historias", "home": "Volver"},
-        "ManageGestures": {"home": "Volver"},
-        "story": {"left": "Opción Izquierda", "right": "Opción Derecha", "pause": "Pausar", "reset": "Reiniciar", "return": "Volver", "resume": "reanudar"}
+        "story": {"pause": "Pausar", "resume": "reanudar"}
     }
+
     const currentView = appState.currentView
     const options = stateOptions[currentView]
 
