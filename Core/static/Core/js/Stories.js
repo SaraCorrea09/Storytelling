@@ -10,7 +10,7 @@ let typingState = {
     element: null
 };
 
-function loadStory(storyData) { 
+function loadStory(storyData) {
     currentStory = storyData;
     currentNode = storyData.start;
     startNode = storyData.start;
@@ -25,30 +25,24 @@ async function renderStory() {
     const currentId = typingController.id;
 
     isTyping = true;
+    document.getElementById("option-up").innerText = "Pausar";
+    document.getElementById("option-up").dataset.action = "pause";
 
     typingState.paused = false;
     typingState.index = 0;
 
     const node = currentStory.nodes[currentNode];
 
-    const title = document.getElementById("scene-title");
     const text = document.getElementById("scene-text");
-    const downOption = document.getElementById("option-down");
 
-    if (startNode === currentNode) {
-        downOption.innerText = "Volver";
-        downOption.dataset.action = "return";
-    } else {
-        downOption.innerText = "Reiniciar";
-        downOption.dataset.action = "reset";
-    }
-
-    title.innerText = currentStory.title;
+    document.getElementById("scene-title").innerText = currentStory.title;
 
     setOptionsEnabled(false);
     renderOptions(["-"]);
 
-    await typeWriter(node.text, text, 10, currentId);
+    speechSynthesis.cancel();
+
+    await speakAndWrite(node.text, text, currentId);
 
     if (currentId !== typingController.id) return;
 
@@ -56,6 +50,8 @@ async function renderStory() {
     setOptionsEnabled(true);
 
     isTyping = false;
+    document.getElementById("option-up").innerText = "Reiniciar";
+    document.getElementById("option-up").dataset.action = "reset";
 }
 
 function renderOptions(options) {
@@ -94,7 +90,11 @@ function chooseLeft() {
     if (!node.options[0]) return;
 
     currentNode = node.options[0].next;
-    renderStory();
+    resumeStory(true);
+    speechSynthesis.cancel();
+    utterance = new SpeechSynthesisUtterance("Seleccionaste "+ node.options[0].text);
+    utterance.onend = () => {renderStory();};
+    speechSynthesis.speak(utterance);
 }
 
 function chooseRight() {
@@ -105,7 +105,11 @@ function chooseRight() {
     if (!node.options[1]) return;
 
     currentNode = node.options[1].next;
-    renderStory();
+    resumeStory(true);
+    speechSynthesis.cancel();
+    utterance = new SpeechSynthesisUtterance("Seleccionaste "+ node.options[1].text);
+    utterance.onend = () => {renderStory();};
+    speechSynthesis.speak(utterance);
 }
 
 function setOptionsEnabled(enabled) {
@@ -128,47 +132,61 @@ function setOptionsEnabled(enabled) {
 function resetStory() {
     if (!currentStory) return;
 
-    currentNode = currentStory.start;
-    renderStory();
+    pauseStory(true);
+    speechSynthesis.cancel();
+    utterance = new SpeechSynthesisUtterance("Reiniciando historia");
+    utterance.onend = () => {currentNode = currentStory.start; renderStory();};
+    speechSynthesis.speak(utterance);
 }
 
-function pauseStory() {
+function pauseStory(fromReset = false) {
+    if (!isTyping) return;
+
+    if (!fromReset) {
+    speechSynthesis.pause();}
+
     typingState.paused = true;
     document.getElementById("option-up").innerText = "Reanudar";
     document.getElementById("option-up").dataset.action = "resume";
 }
 
-function resumeStory() {
+function resumeStory(fromChoice = false) {
+    if (!isTyping) return;
+
+    if (!fromChoice) {
+    speechSynthesis.resume();}
+
     typingState.paused = false;
     document.getElementById("option-up").innerText = "Pausar";
     document.getElementById("option-up").dataset.action = "pause";
 }
 
-function typeWriter(text, element, speed = 20, currentId) {
+function speakAndWrite(text, element, currentId) {
     return new Promise((resolve) => {
 
-        typingState.text = text;
-        typingState.element = element;
-        typingState.index = 0;
+        element.textContent = "";
 
-        function write() {
+        let lastIndex = 0;
+
+        const utterance = new SpeechSynthesisUtterance(text);
+
+        utterance.onboundary = (event) => {
             if (currentId !== typingController.id) return;
 
-            if (typingState.paused) {
-                setTimeout(write, speed);
-                return;
-            }
+            if (event.name === "word") {
+                const charIndex = event.charIndex;
 
-            if (typingState.index < typingState.text.length) {
-                element.textContent += typingState.text[typingState.index];
-                typingState.index++;
-                setTimeout(write, speed);
-            } else {
-                resolve();
+                element.textContent = text.substring(0, charIndex);
+                lastIndex = charIndex;
             }
-        }
+        };
 
-        element.textContent = "";
-        write();
+        utterance.onend = () => {
+            element.textContent = text;
+            resolve();
+        };
+
+        speechSynthesis.cancel();
+        speechSynthesis.speak(utterance);
     });
 }

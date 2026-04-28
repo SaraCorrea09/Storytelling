@@ -1,12 +1,16 @@
 //Parametros de configuracion de gestos
 let parameterGestureRight = -20;
 let parameterGestureLeft = 20;
-let parameterGestureUp = 0.04;
+let parameterGestureUp = 0.10;
 let parameterGestureDown = 0.10;
-let parameterGestureBlink = 250;
+let parameterGestureBlink = 450;
 
 let parameterAudio = true;
 let recognition = null;
+let isListening = false;
+
+const synth = window.speechSynthesis;
+let utterance = null;
 
 async function startCamera() {
 
@@ -67,10 +71,15 @@ function startSpeechRecognition() {
 
     recognition.onend = () => {
         console.log("Reconocimiento detenido, reiniciando...");
+
+        if (isListening) {
+        console.log("Reiniciando...");
         recognition.start();
+        }
     };
 
     recognition.start();
+    isListening = true;
 }
 
 // ESTADOS DEL SISTEMA
@@ -219,37 +228,36 @@ let verticalState = "neutral"
 
 // baseline de referencia (posición normal del usuario)
 let baselineVertical = null
+let frozenVerticalBaseline = null 
 
-function detectHeadVertical(landmarks){
+function detectHeadVertical(landmarks) {
+    if (gestureCooldown) return
 
-    if(gestureCooldown) return
-
-    const nose = landmarks[1]
-    const leftEye = landmarks[33]
-    const rightEye = landmarks[263]
-
+    const nose       = landmarks[1]
+    const leftEye    = landmarks[33]
+    const rightEye   = landmarks[263]
     const eyeCenterY = (leftEye.y + rightEye.y) / 2
     const faceHeight = Math.abs(landmarks[10].y - landmarks[152].y)
+    const diffRaw    = (nose.y - eyeCenterY) / faceHeight
 
-    const diffRaw = (nose.y - eyeCenterY) / faceHeight
-
-    // CALIBRACIÓN AUTOMÁTICA (solo al inicio o si aún no hay baseline)
-    if(baselineVertical === null){
+    if (baselineVertical === null) {
         baselineVertical = diffRaw
+        frozenVerticalBaseline = diffRaw
         return
     }
 
-    // Suavizar baseline lentamente (adaptación)
     baselineVertical = 0.98 * baselineVertical + 0.02 * diffRaw
 
-    // Diferencia real respecto a posición neutral
-    const diff = diffRaw - baselineVertical
+    if (frozenVerticalBaseline !== null && baselineSamples.length < BASELINE_INIT_SAMPLES) {
+        frozenVerticalBaseline = 0.98 * frozenVerticalBaseline + 0.02 * diffRaw
+    }
 
+    const diff = diffRaw - baselineVertical
     const deadZone = 0.015
 
     // ABAJO
-    if(diff > parameterGestureDown){
-        if(verticalState !== "down"){
+    if (diff > parameterGestureDown) {
+        if (verticalState !== "down") {
             verticalState = "down"
             headDown = true
             console.log("Cabeza abajo")
@@ -258,9 +266,9 @@ function detectHeadVertical(landmarks){
         return
     }
 
-    // ARRIBA
-    if(diff < -parameterGestureUp){
-        if(verticalState !== "up"){
+    // ARRIBA — solo si ya estuvo en neutral antes (no directo desde down)
+    if (diff < -parameterGestureUp) {
+        if (verticalState === "neutral") {  // ← único cambio clave
             verticalState = "up"
             headDown = false
             console.log("Cabeza arriba")
@@ -270,10 +278,11 @@ function detectHeadVertical(landmarks){
     }
 
     // NEUTRAL
-    if(Math.abs(diff) < deadZone){
+    if (Math.abs(diff) < deadZone) {
         verticalState = "neutral"
         headDown = false
     }
+
 }
 
 // ===============================
@@ -284,117 +293,149 @@ let earHistory = []
 const EAR_WINDOW = 5
 
 let baselineEAR = null
-let eyeState = "open" // "open" | "closing"
+let baselineSamples = []
+const BASELINE_INIT_SAMPLES = 30
+
+let eyeState = "open"
 let openFrames = 0
+let lastEAR = null  // ← para detectar caídas bruscas
 
 function distance(a, b) {
     return Math.hypot(a.x - b.x, a.y - b.y)
 }
 
-function getEAR(landmarks) {
-    const p1 = landmarks[33]
-    const p4 = landmarks[133]
+function getEAR(lm) {
+    const v1L = distance(lm[159], lm[145])
+    const v2L = distance(lm[158], lm[153])
+    const hL  = distance(lm[33],  lm[133])
+    const earL = (v1L + v2L) / (2.0 * hL)
 
-    const p2 = landmarks[159]
-    const p6 = landmarks[145]
+    const v1R = distance(lm[386], lm[374])
+    const v2R = distance(lm[385], lm[380])
+    const hR  = distance(lm[362], lm[263])
+    const earR = (v1R + v2R) / (2.0 * hR)
 
-    const p3 = landmarks[158]
-    const p5 = landmarks[153]
-
-    const vertical1 = distance(p2, p6)
-    const vertical2 = distance(p3, p5)
-    const horizontal = distance(p1, p4)
-
-    return (vertical1 + vertical2) / (2.0 * horizontal)
+    return (earL + earR) / 2
 }
 
 function smoothEAR(ear) {
     earHistory.push(ear)
-    if (earHistory.length > EAR_WINDOW) {
-        earHistory.shift()
-    }
+    if (earHistory.length > EAR_WINDOW) earHistory.shift()
     return earHistory.reduce((a, b) => a + b, 0) / earHistory.length
 }
 
 function updateBaseline(ear) {
-    if (!baselineEAR) {
-        baselineEAR = ear
+    if (baselineSamples.length < BASELINE_INIT_SAMPLES) {
+        baselineSamples.push(ear)
+        if (baselineSamples.length === BASELINE_INIT_SAMPLES) {
+            const sorted = [...baselineSamples].sort((a, b) => a - b)
+            baselineEAR = sorted[Math.floor(sorted.length * 0.85)]
+        }
         return
     }
-
-    // Solo actualizar si claramente está abierto
-    if (ear > baselineEAR * 0.9) {
-        baselineEAR = 0.98 * baselineEAR + 0.02 * ear
+    if (ear > baselineEAR * 0.80) {
+        baselineEAR = 0.995 * baselineEAR + 0.005 * ear
     }
 }
 
 function isHeadTurned(landmarks) {
-    const nose = landmarks[1]
-    const leftFace = landmarks[234]
+    const nose      = landmarks[1]
+    const leftFace  = landmarks[234]
     const rightFace = landmarks[454]
-
-    const distLeft = Math.abs(nose.x - leftFace.x)
+    const distLeft  = Math.abs(nose.x - leftFace.x)
     const distRight = Math.abs(nose.x - rightFace.x)
-
-    const ratio = distLeft / distRight
-
-    return (ratio < 0.5 || ratio > 2)
+    const ratio     = distLeft / distRight
+    return ratio < 0.5 || ratio > 2
 }
 
-function detectBlink(landmarks){
+function isLookingDownForBlink(landmarks) {
+    if (baselineVertical === null) return false
+    const nose       = landmarks[1]
+    const leftEye    = landmarks[33]
+    const rightEye   = landmarks[263]
+    const eyeCenterY = (leftEye.y + rightEye.y) / 2
+    const faceHeight = Math.abs(landmarks[10].y - landmarks[152].y)
+    const diffRaw    = (nose.y - eyeCenterY) / faceHeight
+    const diff = diffRaw - frozenVerticalBaseline
 
-    if(gestureCooldown) return
-    if(isHeadTurned(landmarks)) return
+    return diff > 0.015  // ← mucho más sensible que 0.05
+}
 
-    const earRaw = getEAR(landmarks)
-    const ear = smoothEAR(earRaw)
+// ← NUEVA: detecta si el EAR cayó demasiado rápido para ser un parpadeo real
+function isSuddenDrop(ear) {
+    if (lastEAR === null) return false
+    const drop = lastEAR - ear
+    // Un parpadeo real baja gradualmente. Caída > 40% en 1 frame = movimiento brusco
+    return drop > lastEAR * 0.40
+}
 
-    updateBaseline(ear)
+function detectBlink(landmarks) {
+    if (gestureCooldown) return
 
-    if(!baselineEAR) return
-
-    const threshold = baselineEAR * 0.65
-
-    // OJO ABIERTO
-    if(ear > threshold){
-        openFrames++
-
-        if(eyeState !== "open"){
-            eyeState = "open"
-            blinkStart = null
-        }
-
+    if (isHeadTurned(landmarks) || isLookingDownForBlink(landmarks)) {
+        eyeState  = "open"
+        openFrames = 0
+        blinkStart = null
+        earHistory = []
+        lastEAR   = null
         return
     }
 
-    // Evitar falsos si no estuvo abierto antes
-    if(openFrames < 2){
+    const earRaw = getEAR(landmarks)
+
+    // Guardar EAR antes de suavizar para comparar frame a frame
+    const prevEAR = lastEAR
+    lastEAR = earRaw
+
+    updateBaseline(earRaw)
+    if (!baselineEAR) return
+
+    const ear = smoothEAR(earRaw)
+    const threshold = baselineEAR * 0.60
+
+    // OJO ABIERTO
+    if (ear > threshold) {
+        openFrames++
+        if (eyeState !== "open") {
+            eyeState  = "open"
+            blinkStart = null
+        }
+        return
+    }
+
+    if (openFrames < 3) return
+
+    // ← Ignorar si fue una caída brusca (movimiento, no parpadeo)
+    if (isSuddenDrop(earRaw)) {
+        console.log("Caída brusca ignorada, EAR:", earRaw.toFixed(3))
+        eyeState  = "open"
+        openFrames = 0
+        blinkStart = null
+        earHistory = []
+        lastEAR   = null
         return
     }
 
     // OJO CERRANDO
-    if(ear <= threshold){
+    if (eyeState === "open") {
+        eyeState  = "closing"
+        blinkStart = Date.now()
+    }
 
-        if(eyeState === "open"){
-            eyeState = "closing"
-            blinkStart = Date.now()
-        }
+    if (blinkStart) {
+        const duration = Date.now() - blinkStart
+        if (duration > parameterGestureBlink) {
+            console.log("Parpadeo largo:", duration, "ms")
+            handleGesture("long_blink")
 
-        if(blinkStart){
-            const duration = Date.now() - blinkStart
-
-            if(duration > parameterGestureBlink){
-                console.log("Parpadeo largo")
-                handleGesture("long_blink")
-
-                blinkStart = null
-                eyeState = "open"
-                openFrames = 0
-            }
+            blinkStart = null
+            eyeState  = "open"
+            openFrames = 0
+            earHistory = []
+            lastEAR   = null
         }
     }
 }
-
 
 // STATUS DE LA CAMARA Y ROSTRO
 function showStatus(elementId, message, type, duration=0){

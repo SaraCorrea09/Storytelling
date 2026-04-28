@@ -12,16 +12,12 @@ function managerAnswer(data){
 function handleVoice(text) {
 
     text = text.toLowerCase();
-    
-    //const stateOptions = {
-    //    "home": {"menustory": "Historias", "ManageGestures": "Sensibilidad de Gestos"},
-    //    "menustory": {"new_story": "Historia Aleatoria", "record_story": "Lista de Historias", "home": "Volver"},
-    //    "ManageGestures": {"home": "Volver"},
-    //    "story": {"left": "Opción Izquierda", "right": "Opción Derecha", "pause": "Pausar", "reset": "Reiniciar", "return": "Volver", "resume": "reanudar"}
-    //}
 
     const stateOptions = {
-        "story": {"pause": "Pausar", "resume": "reanudar"}
+        "home": {"menustory": "Historias", "ManageGestures": "Sensibilidad de Gestos"},
+        "menustory": {"new_story": "Historia Aleatoria", "record_story": "Lista de Historias", "home": "Volver"},
+        "ManageGestures": {"home": "Volver"},
+        "story": {"left": "Opción Izquierda", "right": "Opción Derecha", "pause": "Pausar", "reset": "Reiniciar", "return": "Volver", "resume": "reanudar"}
     }
 
     const currentView = appState.currentView
@@ -113,6 +109,7 @@ function selectOption(direction){
 
 function confirmSelection(action = null, optionFromVoice = null){
     const kind_view = getKindView(appState.currentView)
+    const StartAudio = "Seleccionaste "
 
     // Navegación tipo menú
     if(kind_view === "menu"){
@@ -127,17 +124,47 @@ function confirmSelection(action = null, optionFromVoice = null){
 
         switch(appState.currentView){
             case "home":
-                if(action === "menustory") goToView("menustory");
-                if(action === "ManageGestures") goToView("ManageGestures");
+                if(action === "menustory") {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Historias");
+                    speechSynthesis.speak(utterance);
+                    goToView("menustory");
+                }
+                if(action === "ManageGestures") {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Sensibilidad de Gestos");
+                    speechSynthesis.speak(utterance);
+                    goToView("ManageGestures");
+                }
                 break;
             case "menustory":
-                if(action === "home") goToView("home");
-                if(action === "new_story") sendMessage("story","random");
-                if(action === "record_story") sendMessage("story","list");
+                if(action === "home") {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Volver al menú principal");
+                    speechSynthesis.speak(utterance);
+                    goToView("home");
+                }
+                if(action === "new_story") {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Historia Aleatoria");
+                    utterance.onend = () => {sendMessage("story", "random");};
+                    speechSynthesis.speak(utterance);
+                }
+                if(action === "record_story") {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Lista de Historias");
+                    utterance.onend = () => {sendMessage("story", "list");};
+                    speechSynthesis.speak(utterance);
+                }
                 break;
             case "ManageGestures":
                 if(action === "ManageGestures"){}
-                if(action === "home") goToView("home");
+                if(action === "home") {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Volver al menú principal");
+                    speechSynthesis.speak(utterance);
+                    goToView("home");
+                }
                 break;}
 
         return;
@@ -158,11 +185,20 @@ function confirmSelection(action = null, optionFromVoice = null){
         el.classList.add("confirm")
         setTimeout(()=>{el.classList.remove("confirm")},800)
 
-        if (action === "left") chooseLeft();
-        if (action === "right") chooseRight();
-        if (action === "pause") pauseStory();
-        if (action === "resume") resumeStory();
-        if (action === "reset") resetStory();    
-        if (action === "return") goToView("menustory");
+        switch(appState.currentView){
+            case "story":
+                if (action === "left") chooseLeft();
+                if (action === "right") chooseRight();
+                if (action === "pause") pauseStory();
+                if (action === "resume") resumeStory();
+                if (action === "reset") resetStory();    
+                if (action === "return") {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Volver al menú de historias");
+                    speechSynthesis.speak(utterance);
+                    goToView("menustory");
+                    }
+            break;
+        }
     }
 }
