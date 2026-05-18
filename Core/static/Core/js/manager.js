@@ -6,7 +6,10 @@ function managerAnswer(data){
         goToView("story")
         loadStory(data.payload)
     }
-    if(data.type === "story" && data.action === "list"){}
+    if(data.type === "story" && data.action === "list"){
+        goToView("StoriesList")
+        loadStoriesList(data.payload)
+    }
 }
 
 function handleVoice(text) {
@@ -16,8 +19,10 @@ function handleVoice(text) {
     const stateOptions = {
         "home": {"menustory": "Historias", "ManageGestures": "Sensibilidad de Gestos"},
         "menustory": {"new_story": "Historia Aleatoria", "record_story": "Lista de Historias", "home": "Volver"},
-        "ManageGestures": {"home": "Volver"},
-        "story": {"left": "Opción Izquierda", "right": "Opción Derecha", "pause": "Pausar", "reset": "Reiniciar", "return": "Volver", "resume": "reanudar"}
+        "ManageGestures": {"home": "Volver", "BlinkSensitivity": "Parpadeo de Confirmación", "VerticalSensitivity": "Inclinación Vertical", "HorizontalSensitivity": "Inclinación Horizontal"},
+        "SensitivitySelector": {"ManageGestures": "Volver", "HighSensitivity": "Sensibilidad Alta", "MediumSensitivity": "Sensibilidad Media", "LowSensitivity": "Sensibilidad Baja"},
+        "story": {"left": "Opción Izquierda", "right": "Opción Derecha", "pause": "Pausar", "reset": "Reiniciar", "return": "Volver", "resume": "reanudar"},
+        "StoriesList": {"story_1": "Primera Historia", "story_2": "Segunda Historia", "story_3": "Tercera Historia", "story_4": "Cuarta Historia", "menustory": "Volver"}
     }
 
     const currentView = appState.currentView
@@ -105,9 +110,17 @@ function selectOption(direction){
         el.classList.add("active")}
 }
 
-
+let lastView = null;
+let lastAction = null;
+let isConfirming = false;
 
 function confirmSelection(action = null, optionFromVoice = null){
+
+    if (isConfirming) return;
+    isConfirming = true;
+    setTimeout(() => { isConfirming = false; }, 2000);
+
+    lastView = appState.currentView;
     const kind_view = getKindView(appState.currentView)
     const StartAudio = "Seleccionaste "
 
@@ -158,12 +171,96 @@ function confirmSelection(action = null, optionFromVoice = null){
                 }
                 break;
             case "ManageGestures":
-                if(action === "ManageGestures"){}
+                if(action === "BlinkSensitivity"){
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Parpadeo de Confirmación");
+                    speechSynthesis.speak(utterance);
+                    goToView("SensitivitySelector");
+                    managerTitleSensitivity("BlinkSensitivity");
+                }
+                if(action === "VerticalSensitivity"){
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Inclinación Vertical");
+                    speechSynthesis.speak(utterance);
+                    goToView("SensitivitySelector");
+                    managerTitleSensitivity("VerticalSensitivity");
+                }
+                if(action === "HorizontalSensitivity"){
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Inclinación Horizontal");
+                    speechSynthesis.speak(utterance);
+                    goToView("SensitivitySelector");
+                    managerTitleSensitivity("HorizontalSensitivity");
+                }
                 if(action === "home") {
                     speechSynthesis.cancel();
                     const utterance = new SpeechSynthesisUtterance(StartAudio + "Volver al menú principal");
                     speechSynthesis.speak(utterance);
                     goToView("home");
+                }
+                break;
+            case "SensitivitySelector":
+
+                if (lastView === appState.currentView && lastAction === action) return;
+                lastView = appState.currentView;
+                lastAction = action;
+
+                if(action === "HighSensitivity"){
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Sensibilidad Alta");
+                    speechSynthesis.speak(utterance);
+                    selectOptionSensitivity("HighSensitivity");
+                }
+                if(action === "MediumSensitivity"){
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Sensibilidad Media");
+                    speechSynthesis.speak(utterance);
+                    selectOptionSensitivity("MediumSensitivity");
+                }
+                if(action === "LowSensitivity"){
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Sensibilidad Baja");
+                    speechSynthesis.speak(utterance);
+                    selectOptionSensitivity("LowSensitivity");
+                }
+                if(action === "ManageGestures") {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Volver a Sensibilidad de Gestos");
+                    speechSynthesis.speak(utterance);
+                    goToView("ManageGestures");
+                    managerTitleSensitivity("home");
+                }
+                break;
+            case "StoriesList":
+                if(action === "story_1") {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Primera Historia");
+                    utterance.onend = () => {sendMessage("story", "get", storySlotIds["one"]);};
+                    speechSynthesis.speak(utterance);
+                }
+                if(action === "story_2") {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Segunda Historia");
+                    utterance.onend = () => {sendMessage("story", "get", storySlotIds["two"]);};
+                    speechSynthesis.speak(utterance);
+                }
+                if(action === "story_3") {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Tercera Historia");
+                    utterance.onend = () => {sendMessage("story", "get", storySlotIds["three"]);};
+                    speechSynthesis.speak(utterance);
+                }
+                if(action === "story_4") {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Cuarta Historia");
+                    utterance.onend = () => {sendMessage("story", "get", storySlotIds["four"]);};
+                    speechSynthesis.speak(utterance);
+                }
+                if(action === "menustory") {
+                    speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(StartAudio + "Volver a Menú de Historias");
+                    speechSynthesis.speak(utterance);
+                    goToView("menustory");
                 }
                 break;}
 

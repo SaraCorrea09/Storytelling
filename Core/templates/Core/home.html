@@ -47,11 +47,43 @@
     <h1>Sensibilidad de Gestos</h1> 
     <div id="menu-container">
 
-        <div class="menu-item active" data-action="ManageGestures">
-            Pendiente
+        <div class="menu-item active" data-action="BlinkSensitivity">
+            Parpadeo de Confirmación
+        </div>
+
+        <div class="menu-item" data-action="VerticalSensitivity">
+            Inclinación Vertical
+        </div>
+
+        <div class="menu-item" data-action="HorizontalSensitivity">
+            Inclinación Horizontal
         </div>
 
         <div class="menu-item" data-action="home">
+            Volver
+        </div>
+
+    </div>
+</div>
+
+<!-- Selector Sensibilidad de Gestos -->
+<div id="view-SensitivitySelector" class="view">
+    <h1 id="sensitivity-title">Selector de Sensibilidad</h1> 
+    <div id="menu-container">
+
+        <div id="option-high" class="menu-item active" data-action="HighSensitivity">
+            Sencibilidad Alta
+        </div>
+
+        <div id="option-medium" class="menu-item" data-action="MediumSensitivity">
+            Sencibilidad Media
+        </div>
+
+        <div id="option-low" class="menu-item" data-action="LowSensitivity">
+            Sencibilidad Baja
+        </div>
+
+        <div class="menu-item" data-action="ManageGestures">
             Volver
         </div>
 
@@ -86,6 +118,32 @@
     </div>
 </div>
 
+<div id="view-StoriesList" class="view">
+    <h1>Lista de Historias</h1> 
+    <div id="menu-container">
+
+        <div id="option-one" class="menu-item active" data-action="story_1">
+            Primera Historia
+        </div>
+
+        <div id="option-two" class="menu-item" data-action="story_2">
+            Segunda Historia
+        </div>
+
+        <div id="option-three" class="menu-item" data-action="story_3">
+            Tercera Historia
+        </div>
+
+        <div id="option-four" class="menu-item" data-action="story_4">
+            Cuarta Historia
+        </div>
+
+        <div class="menu-item" data-action="menustory">
+            Volver
+        </div>
+
+    </div>
+</div>
 
 </body>
 {% endblock %}

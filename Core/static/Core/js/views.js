@@ -2,7 +2,7 @@ let appState = {
     currentView: "home"}
 
 let views = {
-    kind_menu: ["home", "menustory","ManageGestures"],
+    kind_menu: ["home", "menustory","ManageGestures","SensitivitySelector","StoriesList"],
     kind_story: ["story"],
 }
 

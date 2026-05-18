@@ -81,7 +81,9 @@ def getStory(story_id=None):
 
 @sync_to_async
 def listStories():
-    pass
+    from Stories.models import Story
+    stories = Story.objects.values('id', 'title')
+    return {story['id']: story['title'] for story in stories}
 
 @sync_to_async
 def createStories():
